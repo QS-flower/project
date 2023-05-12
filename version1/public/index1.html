@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Chat Interface</title>
+    <link href="./css/style.css" rel="stylesheet" type="text/css"></link>
+</head>
+
+<body>
+    <div class="login" >
+        <div class="main">
+            <div id="form" class="form">
+                <h2>Register with Us</h2>
+                <div class="form-control">
+                    <label for="username">Username</label>
+                    <input type="text" name="username" id="username" placeholder="enter name" />
+                </div>
+                <div class="form-control">
+                    <label for="password">Password</label>
+                    <input type="password" name="password" id="password" placeholder="enter password" />
+                </div>
+                <div class="button">
+                    <button type="submit">Submit</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="index" style="display:none">
+        <div class="sidebar">
+            <div class="myself">
+                <h2>个人信息</h2>
+                <ul class="contact-list">
+                    <li class="contact">
+                        <div class="name" id="name">小明</div>
+                    </li>
+                </ul>
+            </div>
+            <h2>联系人</h2>
+            <ul class="contact-list" id="list">
+                <li class="contact">
+                    <div class="name">小明</div>
+                    <div class="status">在线</div>
+                </li>
+                <li class="contact">
+                    <div class="name">小红</div>
+                    <div class="status">离线</div>
+                </li>
+                <li class="contact">
+                    <div class="name">小刚</div>
+                    <div class="status">在线</div>
+                </li>
+                <li class="contact">
+                    <div class="name">小华</div>
+                    <div class="status">离线</div>
+                </li>
+            </ul>
+        </div>
+        <div class="chat-box">
+            <!-- <div class="小黄">
+                <div class="message_left">
+                    <span class="sender">小黄</span>
+                    <span class="text">你好，今天去看电影吗？</span>
+                </div>
+                <div class="message_right">
+                    <span class="sender">我</span>
+                    <span class="text">嗯，可以啊，你想看哪部电影？</span>
+                </div>
+                <div class="message_left">
+                    <span class="sender">小黄</span>
+                    <span class="text">我想看《复仇者联盟4》。</span>
+                </div>
+                <div class="message_right">
+                    <span class="sender">我</span>
+                    <span class="text">好的，那我们什么时候去？</span>
+                </div>
+                <div class="message_left">
+                    <span class="sender">小黄</span>
+                    <span class="text">下午3点怎么样？</span>
+                </div>
+            </div> -->
+        </div>
+        <div class="chat-input">
+            <textarea placeholder="请输入" class="input"></textarea>
+            <button class="send">发送</button>
+        </div>
+    </div>
+</body>
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/jquery/3.6.4/jquery.min.js"></script>
+<script src="./js/index.js"></script>
+<script>
+    var socket=io();
+    var user=$('#username');
+    var psd=$('#password');
+    var button=$('.button');
+    var login=$('.login');
+    var index=$('.index');
+    var name1=$('#name');
+    var friend=$('#list');
+    var chat=$('.chat-box');
+    var parentSelector = '#list';
+    var input=$('.input');
+    var send=$('.send');
+    var from,to;
+    function boxScroll(o){
+     o.scrollTop = o.scrollHeight;
+    }
+    button.on('click',function(){
+        var username=user.val();
+        var password=psd.val();
+        socket.emit('login',{username:username,password:password});
+    });
+    socket.on('error1',data=>{
+        alert(data.message);
+    });
+    socket.on('success',data=>{
+        login.fadeOut();
+        index.fadeIn();
+        name1.text(data.username);
+        chat.children('div').hide();
+        socket.on('friend-in',data=>{
+            //console.log(data);
+            friend.text('');
+            data.forEach(item => {
+                //console.log(item);
+                var str=`<li class="contact">
+                    <div class="name">${item}</div>
+                    <div class="status">在线</div>
+                </li>`;
+                friend.append(str);
+                var str1=`<div class="${item}">
+                </div>`
+                chat.append(str1);
+                chat.children('div').hide();
+            });
+        })
+        socket.on('friend-out',data=>{
+            //console.log(data);
+            data.forEach(item => {
+                //console.log(item);
+                var str=`<li class="contact">
+                    <div class="name">${item}</div>
+                    <div class="status">离线</div>
+                </li>`
+                friend.append(str);
+                var str1=`<div class="${item}">
+                </div>`
+                chat.append(str1);
+                chat.children('div').hide();
+            });
+        })
+    }); 
+    $(parentSelector).on('click', function (event) {
+        if ($(event.target).is('li')) {
+            $(parentSelector + ' li').removeClass('selected');
+            $(event.target).addClass('selected');
+            from=name1.text();
+            to=$(event.target).children('.name').text();
+            console.log(from);
+            console.log(to);
+            socket.emit('msg',{from:from,to:to});
+            chat.children('div').hide();
+            $('.'+to).show();
+        }
+    })
+    send.on('click',function(){
+        var message=input.val();
+        console.log(message);
+        socket.emit('send_msg',{from:from,message:message});
+        input.val('');
+        var str=`<div class="message_right">
+                <span class="sender">我</span>
+                <span class="text">${message}</span>
+            </div>`
+        $('.'+to).append(str);
+        boxScroll($('.'+to).get(0));
+    })
+    socket.on('recive',function(data){
+        console.log(data);
+        chat.children('div').hide();
+        $('.'+data.from).show();
+        var str=`<div class="message_left">
+                    <span class="sender">${data.from}</span>
+                    <span class="text">${data.message}</span>
+                </div>`
+        $('.'+data.from).append(str);
+        boxScroll($('.'+data.from).get(0));
+    })
+    socket.on('in',function(data){
+        console.log(data);
+        friend.children('li').each(function(){
+            if($(this).children('.name').text()==data){
+                $(this).children('.status').text('在线');
+            }
+        })
+    })
+    socket.on('out',function(data){
+        console.log(data);
+        friend.children('li').each(function(){
+            if($(this).children('.name').text()==data){
+                $(this).children('.status').text('离线');
+            }
+        })
+    })
+</script>
+</html>
