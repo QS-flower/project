@@ -102,10 +102,8 @@
     var parentSelector = '#list';
     var input=$('.input');
     var send=$('.send');
-    var from,to;
-    function boxScroll(o){
-     o.scrollTop = o.scrollHeight;
-    }
+    var from=name1.text();
+    var to;
     button.on('click',function(){
         var username=user.val();
         var password=psd.val();
@@ -174,18 +172,28 @@
                 <span class="text">${message}</span>
             </div>`
         $('.'+to).append(str);
-        boxScroll($('.'+to).get(0));
+        var height=chat.prop('scrollHeight');
+        console.log(height);
+        chat.scrollTop(height);
     })
     socket.on('recive',function(data){
         console.log(data);
         chat.children('div').hide();
         $('.'+data.from).show();
+        to=data.from;
         var str=`<div class="message_left">
                     <span class="sender">${data.from}</span>
                     <span class="text">${data.message}</span>
                 </div>`
         $('.'+data.from).append(str);
-        boxScroll($('.'+data.from).get(0));
+        friend.children('li').each(function(){
+            if($(this).children('.name').text()===data.from){
+                $(this).addClass('selected')
+            }else $(this).removeClass('selected');
+        })
+        var height=chat.prop('scrollHeight');
+        console.log(height);
+        chat.scrollTop(height);
     })
     socket.on('in',function(data){
         console.log(data);
@@ -203,5 +211,24 @@
             }
         })
     })
+    /* if(input.val()!==""){
+        input.on('keydown',function(event){
+        var keyCode = event.keyCode;
+       if(keyCode===13){
+        var message=input.val();
+        console.log(message);
+        socket.emit('send_msg',{from:from,message:message});
+        input.val('');
+        var str=`<div class="message_right">
+                <span class="sender">我</span>
+                <span class="text">${message}</span>
+            </div>`
+        $('.'+to).append(str);
+        var height=$('.'+to).prop('scrollHeight');
+        //console.log()
+        $('.'+to).scrollTop(height);
+       }
+    })
+    } */
 </script>
 </html>

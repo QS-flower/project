@@ -88,6 +88,7 @@ io.on('connection', (socket) => {
   })
   socket.on('send_msg',function(data){
     console.log(data);
+    if(User_on.has(to))
     User_on.get(to).emit('recive',data);
   })
   socket.on('disconnect',(data)=>{
